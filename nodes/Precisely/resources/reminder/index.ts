@@ -5,10 +5,16 @@ import {
 	organizationIdField,
 	returnAllField,
 } from '../../shared/descriptions';
+import { returnDeleted } from '../../shared/transforms';
 
 const showOnlyForReminders = {
 	resource: ['reminder'],
 };
+
+// Operations that target a specific document.
+const documentScopedOperations = ['getAllForDocument', 'create', 'delete'];
+// Operations that return a list.
+const listOperations = ['getAll', 'getAllForDocument'];
 
 export const reminderDescription: INodeProperties[] = [
 	{
@@ -18,6 +24,31 @@ export const reminderDescription: INodeProperties[] = [
 		noDataExpression: true,
 		displayOptions: { show: showOnlyForReminders },
 		options: [
+			{
+				name: 'Create',
+				value: 'create',
+				action: 'Create a reminder',
+				description: 'Create a reminder on a document',
+				routing: {
+					request: {
+						method: 'POST',
+						url: '=/organizations/{{$parameter.organizationId}}/documents/{{$parameter.documentId}}/reminders',
+					},
+				},
+			},
+			{
+				name: 'Delete',
+				value: 'delete',
+				action: 'Delete a reminder',
+				description: 'Delete a reminder from a document',
+				routing: {
+					request: {
+						method: 'DELETE',
+						url: '=/organizations/{{$parameter.organizationId}}/documents/{{$parameter.documentId}}/reminders/{{$parameter.reminderId}}',
+					},
+					output: { postReceive: [returnDeleted] },
+				},
+			},
 			{
 				name: 'Get Many',
 				value: 'getAll',
@@ -52,17 +83,84 @@ export const reminderDescription: INodeProperties[] = [
 	{
 		...documentIdField,
 		displayOptions: {
-			show: { ...showOnlyForReminders, operation: ['getAllForDocument'] },
+			show: { ...showOnlyForReminders, operation: documentScopedOperations },
 		},
 	},
 	{
+		displayName: 'Reminder ID',
+		name: 'reminderId',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. 91',
+		description: 'ID of the reminder to delete',
+		displayOptions: {
+			show: { ...showOnlyForReminders, operation: ['delete'] },
+		},
+	},
+	// Create fields
+	{
+		displayName: 'Remind At',
+		name: 'remindAt',
+		type: 'dateTime',
+		default: '',
+		required: true,
+		description: 'When the reminder should be sent',
+		displayOptions: {
+			show: { ...showOnlyForReminders, operation: ['create'] },
+		},
+		routing: { send: { type: 'body', property: 'remindAt' } },
+	},
+	{
+		displayName: 'Recipients',
+		name: 'recipients',
+		type: 'string',
+		typeOptions: { multipleValues: true, multipleValueButtonText: 'Add Recipient' },
+		default: [],
+		placeholder: 'e.g. maria@example.com',
+		description: 'Email addresses to send the reminder to',
+		displayOptions: {
+			show: { ...showOnlyForReminders, operation: ['create'] },
+		},
+		routing: { send: { type: 'body', property: 'recipients' } },
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: { ...showOnlyForReminders, operation: ['create'] },
+		},
+		options: [
+			{
+				displayName: 'Message',
+				name: 'message',
+				type: 'string',
+				default: '',
+				description: 'Message included in the reminder',
+				routing: { send: { type: 'body', property: 'message' } },
+			},
+			{
+				displayName: 'Name',
+				name: 'name',
+				type: 'string',
+				default: '',
+				description: 'Name of the reminder',
+				routing: { send: { type: 'body', property: 'name' } },
+			},
+		],
+	},
+	// Return All / Limit for the list operations
+	{
 		...returnAllField,
-		displayOptions: { show: showOnlyForReminders },
+		displayOptions: { show: { ...showOnlyForReminders, operation: listOperations } },
 	},
 	{
 		...clientLimitField,
 		displayOptions: {
-			show: { ...showOnlyForReminders, returnAll: [false] },
+			show: { ...showOnlyForReminders, operation: listOperations, returnAll: [false] },
 		},
 	},
 	{
@@ -71,7 +169,7 @@ export const reminderDescription: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Option',
 		default: {},
-		displayOptions: { show: showOnlyForReminders },
+		displayOptions: { show: { ...showOnlyForReminders, operation: listOperations } },
 		options: [
 			{
 				displayName: 'Only Active',

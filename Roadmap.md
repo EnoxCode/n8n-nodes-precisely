@@ -43,29 +43,52 @@ Legend: ✅ done · 🚧 in progress · ⬜ planned
 
 > Reviewer and single-reminder have no GET-single endpoint (`.../reviewers/{reviewerId}` and `.../reminders/{reminderId}` are POST/DELETE only), so only Get Many is available for those.
 
-## Phase 3 — Documents (POST / PUT / write actions)
+## Phase 3 — Write actions (POST / PATCH / DELETE)
 
-| Status | Resource | Operation | Endpoint |
-|--------|----------|-----------|----------|
-| ⬜ | Document | Import / Create | `POST /organizations/{organizationId}/documents/import` |
-| ⬜ | Document | Update | `PUT /organizations/{organizationId}/documents/{documentId}` |
-| ⬜ | Document | Delete | `DELETE /organizations/{organizationId}/documents/{documentId}` |
-| ⬜ | Document | Send Signature Request | `POST /organizations/{organizationId}/documents/{documentId}/signature-request` |
+**Document**
 
-## Phase 3b — Reminders & Reviewers (write actions)
+| Status | Operation | Endpoint |
+|--------|-----------|----------|
+| ✅ | Create (import a file) | `POST /organizations/{organizationId}/documents/import` |
+| ✅ | Update | `PATCH /organizations/{organizationId}/documents/{documentId}` |
+| ✅ | Delete | `DELETE /organizations/{organizationId}/documents/{documentId}` |
+| ✅ | Send Signature Request | `POST /organizations/{organizationId}/documents/{documentId}/signature-request` |
+| ✅ | Cancel Signature Request | `DELETE /organizations/{organizationId}/documents/{documentId}/signature-request` |
+| ✅ | Send Signature Reminder | `POST /organizations/{organizationId}/documents/{documentId}/signature-request/reminder` |
 
-| Status | Resource | Operation | Endpoint |
-|--------|----------|-----------|----------|
-| ⬜ | Reminder | Create (for Document) | `POST /organizations/{organizationId}/documents/{documentId}/reminders` |
-| ⬜ | Reminder | Delete | `DELETE /organizations/{organizationId}/documents/{documentId}/reminders/{reminderId}` |
-| ⬜ | Reviewer | Create | `POST /organizations/{organizationId}/documents/{documentId}/reviewers` |
-| ⬜ | Reviewer | Delete | `DELETE /organizations/{organizationId}/documents/{documentId}/reviewers/{reviewerId}` |
+**Project**
 
-> Reminders and reviewers have no GET-single or PUT endpoint — only list (GET), create (POST) and delete (DELETE). Read actions for both are already done in Phase 2b.
+| Status | Operation | Endpoint |
+|--------|-----------|----------|
+| ✅ | Update | `PATCH /organizations/{organizationId}/projects/{projectId}` |
+| ✅ | Delete | `DELETE /organizations/{organizationId}/projects/{projectId}` |
+| ✅ | Approve (Initial) | `POST /organizations/{organizationId}/projects/{projectId}/approvals/initial` |
+| ✅ | Approve (Final) | `POST /organizations/{organizationId}/projects/{projectId}/approvals/final` |
+| ✅ | Import Document | `POST /organizations/{organizationId}/projects/{projectId}/documents/import` |
+| ✅ | Send Signature Request | `POST /organizations/{organizationId}/projects/{projectId}/signature-request` |
+
+**Template**
+
+| Status | Operation | Endpoint |
+|--------|-----------|----------|
+| ✅ | Create Project (draft) | `POST /organizations/{organizationId}/templates/{templateId}/projects` |
+| ✅ | Update Project | `PATCH /organizations/{organizationId}/templates/{templateId}/projects/{projectId}` |
+| ✅ | Set Reference Options | `PUT /organizations/{organizationId}/templates/{templateId}/references/{referenceId}/options` |
+
+**Reminder / Reviewer**
+
+| Status | Operation | Endpoint |
+|--------|-----------|----------|
+| ✅ | Reminder — Create | `POST /organizations/{organizationId}/documents/{documentId}/reminders` |
+| ✅ | Reminder — Delete | `DELETE /organizations/{organizationId}/documents/{documentId}/reminders/{reminderId}` |
+| ✅ | Reviewer — Create | `POST /organizations/{organizationId}/documents/{documentId}/reviewers` |
+| ✅ | Reviewer — Delete | `DELETE /organizations/{organizationId}/documents/{documentId}/reviewers/{reviewerId}` |
+
+> Delete/Cancel operations return `{ deleted: true }`. File imports read a file from an input binary field and base64-encode it. Template drafting `references` is passed as a JSON array (per-reference answer objects) — a structured UI for it is a future enhancement.
 
 ## Later / backlog
 
 - **Trigger node** (programmatic) for Precisely resthooks — subscribe to events and receive webhook callbacks, verifying the `Precisely-Signature` header. See CLAUDE.md → "Resthooks / webhooks".
-- Project write actions (drafting/import/signature-request), Template project creation, Approvals (final/initial), Signees.
-- Additional resources: Signatures/Signees, Folders, Metadata, Teams, Users.
+- Not yet wired: document sub-resources **Signees**, **Metadata Points**, **Links**; project **Signees**; template **references** structured input.
+- Additional top-level resources: Folders, Teams, Users, Metadata Keys.
 - Upgrade `organizationId` to a `resourceLocator` with a `listSearch` dropdown backed by `GET /organizations`.

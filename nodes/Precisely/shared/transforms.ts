@@ -4,8 +4,61 @@ import type {
 	IHttpRequestOptions,
 	IN8nHttpFullResponse,
 	INodeExecutionData,
+	PostReceiveAction,
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
+
+/**
+ * Declarative postReceive that replaces a Delete/Cancel response body with
+ * `{ deleted: true }` (per n8n's UX convention, so the following node triggers).
+ */
+export const returnDeleted: PostReceiveAction = {
+	type: 'set',
+	properties: { value: '={{ { "deleted": true } }}' },
+};
+
+/**
+ * preSend for Document: Create (Import). Reads the PDF/DOCX from the named input
+ * binary field, base64-encodes it into the `file` body property, and adds the
+ * optional folder / link fields.
+ */
+export const buildDocumentImportBody = async function (
+	this: IExecuteSingleFunctions,
+	requestOptions: IHttpRequestOptions,
+): Promise<IHttpRequestOptions> {
+	const inputField = this.getNodeParameter('inputField', 'data') as string;
+	const options = this.getNodeParameter('options', {}) as IDataObject;
+
+	const buffer = await this.helpers.getBinaryDataBuffer(inputField);
+	const body: IDataObject = { file: buffer.toString('base64') };
+
+	if (options.folderId) body.folderId = options.folderId;
+	if (options.linkDocumentId) body.linkDocumentId = options.linkDocumentId;
+	if (options.linkDocumentRelation) body.linkDocumentRelation = options.linkDocumentRelation;
+
+	requestOptions.body = body;
+	return requestOptions;
+};
+
+/**
+ * preSend for Project: Import Document. Same as document import but scoped to a
+ * project (no document-link fields on this endpoint).
+ */
+export const buildProjectImportBody = async function (
+	this: IExecuteSingleFunctions,
+	requestOptions: IHttpRequestOptions,
+): Promise<IHttpRequestOptions> {
+	const inputField = this.getNodeParameter('inputField', 'data') as string;
+	const options = this.getNodeParameter('options', {}) as IDataObject;
+
+	const buffer = await this.helpers.getBinaryDataBuffer(inputField);
+	const body: IDataObject = { file: buffer.toString('base64') };
+
+	if (options.folderId) body.folderId = options.folderId;
+
+	requestOptions.body = body;
+	return requestOptions;
+};
 
 interface DocumentFilterEntry {
 	property: string;
