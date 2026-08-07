@@ -4,6 +4,10 @@ Actions the `n8n-nodes-precisely` node will support, in build order. Checked = i
 
 Legend: ✅ done · 🚧 in progress · ⬜ planned
 
+## Status: publish-ready
+
+All 59/59 endpoints + the trigger node are implemented and pass the validation gates: lint (Gate 1), build (Gate 2), `cloud-support` ENABLED / strict mode (Gate 3), and manual runtime smoke test in local n8n (Gate 4). Remaining work is release/verification only — publish to npm via GitHub Actions (with provenance) and submit to the n8n Creator Portal.
+
 ## Phase 1 — Organizations
 
 | Status | Resource | Operation | Endpoint |
