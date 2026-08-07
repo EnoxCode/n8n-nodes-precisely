@@ -1,73 +1,134 @@
 # n8n-nodes-precisely
 
-This is an n8n community node. It lets you use GitHub Issues in your n8n workflows.
+This is an n8n community node. It lets you use [Precisely](https://preciselycontracts.com/) — a contract automation and e-signature platform — in your n8n workflows.
+
+With it you can automate contract lifecycles: draft projects from templates, import and send documents for signing, manage signees, reviewers, reminders and metadata, and read everything back out again.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/sustainable-use-license/) workflow automation platform.
 
 [Installation](#installation)
-[Operations](#operations)
 [Credentials](#credentials)
+[Operations](#operations)
+[Usage notes](#usage-notes)
 [Compatibility](#compatibility)
-[Usage](#usage)
 [Resources](#resources)
 
 ## Installation
 
 Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-## Operations
-
-- Issues
-    - Get an issue
-    - Get many issues in a repository
-    - Create a new issue
-- Issue Comments
-    - Get many issue comments
+In short, on self-hosted n8n: **Settings → Community Nodes → Install**, then enter `n8n-nodes-precisely`.
 
 ## Credentials
 
-You can use either access token or OAuth2 to use this node.
+The node authenticates with a **Precisely API key**, sent in the `X-API-KEY` request header.
 
-### Access token
+1. Sign in to Precisely.
+2. Create an API token — see [API tokens in Precisely](https://help.precisely.se/en/articles/5733009-api-tokens-in-precisely).
+3. In n8n, create a new **Precisely API** credential and paste the token into the **API Key** field.
 
-1. Open your GitHub profile [Settings](https://github.com/settings/profile).
-2. In the left navigation, select [Developer settings](https://github.com/settings/apps).
-3. In the left navigation, under Personal access tokens, select Tokens (classic).
-4. Select Generate new token > Generate new token (classic).
-5. Enter a descriptive name for your token in the Note field, like n8n integration.
-6. Select the Expiration you'd like for the token, or select No expiration.
-7. Select Scopes for your token. For most of the n8n GitHub nodes, add the `repo` scope.
-    - A token without assigned scopes can only access public information.
-8. Select Generate token.
-9. Copy the token.
+When you save the credential, n8n validates it by calling `GET /organizations`. All requests go to `https://api.precisely.se` and are rate-limited to **30 requests/minute per organization**.
 
-Refer to [Creating a personal access token (classic)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) for more information. Refer to Scopes for OAuth apps for more information on GitHub scopes.
+> The API also supports JWT bearer auth via `/authenticate`; this node uses the API-key method only.
 
-![Generated Access token in GitHub](https://docs.github.com/assets/cb-17251/mw-1440/images/help/settings/personal-access-tokens.webp)
+## Operations
 
-### OAuth2
+Nearly every operation is scoped to an **Organization**. The Organization field is a searchable dropdown (backed by `GET /organizations`); you can also switch it to **By ID** and enter or map an organization ID directly.
 
-If you're self-hosting n8n, create a new GitHub [OAuth app](https://docs.github.com/en/apps/oauth-apps):
+<details>
+<summary><b>Organization</b></summary>
 
-1. Open your GitHub profile [Settings](https://github.com/settings/profile).
-2. In the left navigation, select [Developer settings](https://github.com/settings/apps).
-3. In the left navigation, select OAuth apps.
-4. Select New OAuth App.
-    - If you haven't created an app before, you may see Register a new application instead. Select it.
-5. Enter an Application name, like n8n integration.
-6. Enter the Homepage URL for your app's website.
-7. If you'd like, add the optional Application description, which GitHub displays to end-users.
-8. From n8n, copy the OAuth Redirect URL and paste it into the GitHub Authorization callback URL.
-9. Select Register application.
-10. Copy the Client ID and Client Secret this generates and add them to your n8n credential.
+- Get
+- Get Many
+</details>
 
-Refer to the [GitHub Authorizing OAuth apps documentation](https://docs.github.com/en/apps/oauth-apps/using-oauth-apps/authorizing-oauth-apps) for more information on the authorization process.
+<details>
+<summary><b>Document</b></summary>
+
+- Create (import a file from a binary field)
+- Get / Get Many
+- Search (filter by document property or metadata)
+- Update / Delete
+- Download PDF (returns a binary file)
+- Get Share Link
+- Get Many Versions / Update Version (set published state)
+- Get / Send / Cancel Signature Request
+- Send Signature Reminder
+</details>
+
+<details>
+<summary><b>Project</b></summary>
+
+- Get / Get Many
+- Update / Delete
+- Get Approvals · Approve (Initial) · Approve (Final) · Approve (By ID) · Delete Approval
+- Get Many Documents · Create Document · Import Document
+- Send / Cancel Signature Request
+- Add Signee · Remove Signee
+</details>
+
+<details>
+<summary><b>Template</b></summary>
+
+- Get / Get Many
+- Get Many References · Get Reference · Get Reference Options · Set Reference Options
+- Create Project (draft a project from the template)
+- Update Project
+</details>
+
+<details>
+<summary><b>Signee</b> (document signees)</summary>
+
+- Get / Get Many
+- Create · Reorder · Delete
+</details>
+
+<details>
+<summary><b>Reviewer</b> (document reviewers)</summary>
+
+- Get Many
+- Create · Delete
+</details>
+
+<details>
+<summary><b>Reminder</b></summary>
+
+- Get Many (organization) · Get Many for Document
+- Create · Delete
+</details>
+
+<details>
+<summary><b>Metadata Point</b> (document metadata)</summary>
+
+- Get Many
+- Create · Update · Delete
+</details>
+
+<details>
+<summary><b>Link</b> (document links)</summary>
+
+- Get Many
+- Create · Delete
+</details>
+
+The node covers every endpoint in these resource areas of the Precisely public API.
+
+## Usage notes
+
+- **Selecting an organization** — use the **From List** mode to pick by name, or **By ID** to type/expression an ID.
+- **List operations** — every *Get Many* offers a **Return All** toggle and a **Limit**. Document and Project lists paginate server-side; the others cap the returned array client-side.
+- **Importing documents** — *Document → Create* and *Project → Import Document* read the file from an **input binary field** (default `data`) and upload it. Put a Read/Binary node (e.g. HTTP Request, Read Binary File) upstream.
+- **Download PDF** — returns the document as binary data in the field you name (default `data`); attach a Write Binary File or upload node downstream.
+- **Delete / Cancel** operations return `{ "deleted": true }` on success.
+- **Search** — add **Filters** (document `status` or `title`) and/or **Metadata Filters** (metadata key + operator + value). At least one filter is required.
+- **Signees, References** — provided as structured, repeatable fields (add one row per signee / reference). The project *Create Document* **Content** is a free-form object, so it is entered as JSON.
 
 ## Compatibility
 
-Compatible with n8n@1.60.0 or later
+Requires n8n **1.60.0** or later.
 
 ## Resources
 
-* [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
-* [GitHub API docs](https://docs.github.com/en/rest/issues)
+- [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
+- [Precisely Contract Automation API](https://help.precisely.se/en/articles/4135833-precisely-s-contract-automation-api)
+- [Precisely API tokens](https://help.precisely.se/en/articles/5733009-api-tokens-in-precisely)

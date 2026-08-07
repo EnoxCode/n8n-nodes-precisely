@@ -8,7 +8,7 @@ import { templateDescription } from './resources/template';
 import { signeeDescription } from './resources/signee';
 import { metadataPointDescription } from './resources/metadataPoint';
 import { linkDescription } from './resources/link';
-import { getOrganizations } from './methods/getOrganizations';
+import { searchOrganizations } from './methods/searchOrganizations';
 
 export class Precisely implements INodeType {
 	description: INodeTypeDescription = {
@@ -101,8 +101,8 @@ export class Precisely implements INodeType {
 	};
 
 	methods = {
-		loadOptions: {
-			getOrganizations,
+		listSearch: {
+			searchOrganizations,
 		},
 	};
 }

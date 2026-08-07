@@ -3,22 +3,46 @@ import type { INodeProperties } from 'n8n-workflow';
 /**
  * Almost every Precisely endpoint is scoped to an organization
  * (`/organizations/{organizationId}/...`). Spread this field into each
- * org-scoped operation and reference it in routing as `$parameter.organizationId`.
+ * org-scoped operation and reference it in routing as `$parameter.organizationId`
+ * — n8n resolves the resourceLocator to its value inside routing expressions.
  *
- * Backed by the `getOrganizations` loadOptions method (GET /organizations), so
- * the user can pick an organization by name or supply an ID via an expression.
+ * The "From List" mode is backed by the `searchOrganizations` listSearch method
+ * (GET /organizations); users can also type an ID directly.
  */
 export const organizationIdField: INodeProperties = {
-	displayName: 'Organization Name or ID',
+	displayName: 'Organization',
 	name: 'organizationId',
-	type: 'options',
-	typeOptions: {
-		loadOptionsMethod: 'getOrganizations',
-	},
-	default: '',
+	type: 'resourceLocator',
+	default: { mode: 'list', value: '' },
 	required: true,
-	description:
-		'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+	description: 'The organization the request is scoped to',
+	modes: [
+		{
+			displayName: 'From List',
+			name: 'list',
+			type: 'list',
+			placeholder: 'Select an organization...',
+			typeOptions: {
+				searchListMethod: 'searchOrganizations',
+				searchable: true,
+			},
+		},
+		{
+			displayName: 'By ID',
+			name: 'id',
+			type: 'string',
+			placeholder: 'e.g. 15',
+			validation: [
+				{
+					type: 'regex',
+					properties: {
+						regex: '^[0-9]+$',
+						errorMessage: 'Not a valid organization ID',
+					},
+				},
+			],
+		},
+	],
 };
 
 /** Standard Return All toggle for list operations. Pair with `limitField`. */
@@ -139,20 +163,109 @@ const authMethodToSignOptions = [
 ];
 
 /**
- * Builds the signee body fields (SigneeRequest). Reused by the document Signee
- * resource and the project Add Signee operation — same body, different
- * displayOptions. Email is the only required field; the rest go in a collection.
+ * Plain SigneeRequest fields (no routing, no displayOptions). Email is first and
+ * required; the rest are alphabetical. Used directly as `fixedCollection` values
+ * for signee arrays, and as the basis for `signeeBodyFields` below.
+ */
+export const signeeValueFields: INodeProperties[] = [
+	{
+		displayName: 'Email',
+		name: 'email',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. maria@example.com',
+		description: 'Email address of the signee',
+	},
+	{
+		displayName: 'Authentication Method to Sign',
+		name: 'authMethodToSign',
+		type: 'options',
+		default: 'standard',
+		description: 'Authentication method required for the signee to sign',
+		options: authMethodToSignOptions,
+	},
+	{
+		displayName: 'Authentication Method to View',
+		name: 'authMethodToView',
+		type: 'options',
+		default: 'none',
+		description: 'Authentication method required for the signee to view',
+		options: authMethodToViewOptions,
+	},
+	{
+		displayName: 'Final Email Notification Disabled',
+		name: 'finalEmailNotificationDisabled',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to disable the final email notification. Defaults to false.',
+	},
+	{
+		displayName: 'Initial Email Notification Disabled',
+		name: 'initialEmailNotificationDisabled',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to disable the initial email notification. Defaults to false.',
+	},
+	{
+		displayName: 'Mobile',
+		name: 'mobile',
+		type: 'string',
+		default: '',
+		description: 'Mobile phone number of the signee',
+	},
+	{
+		displayName: 'Name',
+		name: 'name',
+		type: 'string',
+		default: '',
+		description: 'Name of the signee',
+	},
+	{
+		displayName: 'National ID',
+		name: 'nationalId',
+		type: 'string',
+		default: '',
+		description: 'National ID number of the signee',
+	},
+	{
+		displayName: 'Organization',
+		name: 'organization',
+		type: 'string',
+		default: '',
+		description: 'Organization the signee belongs to',
+	},
+	{
+		displayName: 'Role',
+		name: 'role',
+		type: 'string',
+		default: '',
+		description: 'Free-text role of the signee',
+	},
+	{
+		displayName: 'Signing Role',
+		name: 'signingRole',
+		type: 'options',
+		default: 'signer',
+		description: 'The signing role of the signee',
+		options: [
+			{ name: 'Approver', value: 'approver' },
+			{ name: 'Signer', value: 'signer' },
+			{ name: 'Viewer', value: 'viewer' },
+		],
+	},
+];
+
+/**
+ * Builds the single-signee body fields (SigneeRequest) for the document Signee
+ * Create and project Add Signee operations — Email as a required field, the rest
+ * in an Additional Fields collection, each routed to the request body.
  */
 export function signeeBodyFields(show: DisplayShow): INodeProperties[] {
+	const [email, ...rest] = signeeValueFields;
 	return [
 		{
-			displayName: 'Email',
-			name: 'email',
-			type: 'string',
-			default: '',
-			required: true,
-			placeholder: 'e.g. maria@example.com',
-			description: 'Email address of the signee',
+			...email,
 			displayOptions: { show },
 			routing: { send: { type: 'body', property: 'email' } },
 		},
@@ -163,97 +276,37 @@ export function signeeBodyFields(show: DisplayShow): INodeProperties[] {
 			placeholder: 'Add Field',
 			default: {},
 			displayOptions: { show },
-			options: [
-				{
-					displayName: 'Authentication Method to Sign',
-					name: 'authMethodToSign',
-					type: 'options',
-					default: 'standard',
-					description: 'Authentication method required for the signee to sign',
-					options: authMethodToSignOptions,
-					routing: { send: { type: 'body', property: 'authMethodToSign' } },
-				},
-				{
-					displayName: 'Authentication Method to View',
-					name: 'authMethodToView',
-					type: 'options',
-					default: 'none',
-					description: 'Authentication method required for the signee to view',
-					options: authMethodToViewOptions,
-					routing: { send: { type: 'body', property: 'authMethodToView' } },
-				},
-				{
-					displayName: 'Final Email Notification Disabled',
-					name: 'finalEmailNotificationDisabled',
-					type: 'boolean',
-					default: false,
-					description: 'Whether to disable the final email notification. Defaults to false.',
-					routing: { send: { type: 'body', property: 'finalEmailNotificationDisabled' } },
-				},
-				{
-					displayName: 'Initial Email Notification Disabled',
-					name: 'initialEmailNotificationDisabled',
-					type: 'boolean',
-					default: false,
-					description: 'Whether to disable the initial email notification. Defaults to false.',
-					routing: { send: { type: 'body', property: 'initialEmailNotificationDisabled' } },
-				},
-				{
-					displayName: 'Mobile',
-					name: 'mobile',
-					type: 'string',
-					default: '',
-					description: 'Mobile phone number of the signee',
-					routing: { send: { type: 'body', property: 'mobile' } },
-				},
-				{
-					displayName: 'Name',
-					name: 'name',
-					type: 'string',
-					default: '',
-					description: 'Name of the signee',
-					routing: { send: { type: 'body', property: 'name' } },
-				},
-				{
-					displayName: 'National ID',
-					name: 'nationalId',
-					type: 'string',
-					default: '',
-					description: 'National ID number of the signee',
-					routing: { send: { type: 'body', property: 'nationalId' } },
-				},
-				{
-					displayName: 'Organization',
-					name: 'organization',
-					type: 'string',
-					default: '',
-					description: 'Organization the signee belongs to',
-					routing: { send: { type: 'body', property: 'organization' } },
-				},
-				{
-					displayName: 'Role',
-					name: 'role',
-					type: 'string',
-					default: '',
-					description: 'Free-text role of the signee',
-					routing: { send: { type: 'body', property: 'role' } },
-				},
-				{
-					displayName: 'Signing Role',
-					name: 'signingRole',
-					type: 'options',
-					default: 'signer',
-					description: 'The signing role of the signee',
-					options: [
-						{ name: 'Approver', value: 'approver' },
-						{ name: 'Signer', value: 'signer' },
-						{ name: 'Viewer', value: 'viewer' },
-					],
-					routing: { send: { type: 'body', property: 'signingRole' } },
-				},
-			],
+			options: rest.map((field) => ({
+				...field,
+				routing: { send: { type: 'body', property: field.name } },
+			})),
 		},
 	];
+}
+
+/**
+ * Builds a `fixedCollection` for an array of signees (e.g. project Create
+ * Document `signees`), routed to the given body property as a plain array.
+ */
+export function signeeArrayField(show: DisplayShow, bodyProperty: string): INodeProperties {
+	return {
+		displayName: 'Signees',
+		name: 'signees',
+		type: 'fixedCollection',
+		typeOptions: { multipleValues: true },
+		placeholder: 'Add Signee',
+		default: {},
+		description: 'Signees to add to the document',
+		displayOptions: { show },
+		options: [
+			{
+				name: 'signee',
+				displayName: 'Signee',
+				values: signeeValueFields,
+			},
+		],
+		routing: { send: { type: 'body', property: bodyProperty, value: '={{ $value.signee }}' } },
+	};
 }
 
 /**

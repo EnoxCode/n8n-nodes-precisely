@@ -106,9 +106,12 @@ Legend: ✅ done · 🚧 in progress · ⬜ planned
 
 **Every endpoint under the six top-level resource areas (Organization, Document, Project, Template, Reminder, Reviewer — plus the Signee / Metadata Point / Link document sub-resources) is now implemented: 59/59 spec endpoints.** Verified by cross-checking implemented routes against the OpenAPI spec.
 
+## Done — UX enhancements
+
+- ✅ Structured `fixedCollection` inputs for template `references` (`{name, value}`) and project Create Document `signees` (full signee fields). Only the schema-less project `content` object stays a JSON field.
+- ✅ `organizationId` upgraded to a `resourceLocator` (From List backed by `searchOrganizations`, or By ID).
+
 ## Later / backlog
 
 - **Trigger node** (programmatic) for Precisely resthooks — subscribe to events and receive webhook callbacks, verifying the `Precisely-Signature` header. See CLAUDE.md → "Resthooks / webhooks".
 - Additional top-level resources not yet added: Folders, Teams, Users, Metadata Keys, Subscriptions (resthooks).
-- Structured UIs for the JSON body fields (template `references`, project document `content`/`signees`).
-- Upgrade `organizationId` to a `resourceLocator` with a `listSearch` dropdown backed by `GET /organizations`.

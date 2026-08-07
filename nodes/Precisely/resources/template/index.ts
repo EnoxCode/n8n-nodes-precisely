@@ -33,7 +33,8 @@ const includeContentOption: INodeProperties = {
 	routing: { send: { type: 'query', property: 'includeContent' } },
 };
 
-// Body fields shared by Create Project (draft) and Update Project.
+// Optional body fields shared by Create Project (draft) and Update Project.
+// (References are a top-level fixedCollection field — see referencesField below.)
 const projectBodyOptions: INodeProperties[] = [
 	{
 		displayName: 'Document Names',
@@ -45,21 +46,6 @@ const projectBodyOptions: INodeProperties[] = [
 		routing: { send: { type: 'body', property: 'documentNames' } },
 	},
 	{
-		displayName: 'References (JSON)',
-		name: 'references',
-		type: 'json',
-		default: '[]',
-		description:
-			'Answers to the template references (drafting questions), as a JSON array of reference objects',
-		routing: {
-			send: {
-				type: 'body',
-				property: 'references',
-				value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
-			},
-		},
-	},
-	{
 		displayName: 'Title',
 		name: 'title',
 		type: 'string',
@@ -68,6 +54,44 @@ const projectBodyOptions: INodeProperties[] = [
 		routing: { send: { type: 'body', property: 'title' } },
 	},
 ];
+
+// Structured input for the template references (drafting answers): each entry is
+// a { name, value } pair. Routed to the `references` body array.
+const referencesField: INodeProperties = {
+	displayName: 'References',
+	name: 'references',
+	type: 'fixedCollection',
+	typeOptions: { multipleValues: true },
+	placeholder: 'Add Reference',
+	default: {},
+	description: 'Answers to the template references (drafting questions)',
+	displayOptions: {
+		show: { resource: ['template'], operation: ['createProject', 'updateProject'] },
+	},
+	options: [
+		{
+			name: 'reference',
+			displayName: 'Reference',
+			values: [
+				{
+					displayName: 'Name',
+					name: 'name',
+					type: 'string',
+					default: '',
+					description: 'The name of the reference',
+				},
+				{
+					displayName: 'Value',
+					name: 'value',
+					type: 'string',
+					default: '',
+					description: 'The value to insert',
+				},
+			],
+		},
+	],
+	routing: { send: { type: 'body', property: 'references', value: '={{ $value.reference }}' } },
+};
 
 export const templateDescription: INodeProperties[] = [
 	{
@@ -258,6 +282,8 @@ export const templateDescription: INodeProperties[] = [
 			},
 		],
 	},
+	// References (structured) for Create/Update Project
+	referencesField,
 	// Set Reference Options fields
 	{
 		displayName: 'Options',

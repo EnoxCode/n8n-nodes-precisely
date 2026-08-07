@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import {
 	organizationIdField,
 	projectIdField,
+	signeeArrayField,
 	signeeBodyFields,
 } from '../../shared/descriptions';
 import { buildProjectImportBody, returnDeleted } from '../../shared/transforms';
@@ -327,6 +328,8 @@ export const projectDescription: INodeProperties[] = [
 		},
 		routing: { send: { type: 'body', property: 'title' } },
 	},
+	// Signees (structured) for Create Document
+	signeeArrayField({ ...showOnlyForProjects, operation: ['createDocument'] }, 'signees'),
 	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
@@ -347,20 +350,6 @@ export const projectDescription: INodeProperties[] = [
 					send: {
 						type: 'body',
 						property: 'content',
-						value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
-					},
-				},
-			},
-			{
-				displayName: 'Signees (JSON)',
-				name: 'signees',
-				type: 'json',
-				default: '[]',
-				description: 'A JSON array of signee objects to add to the document',
-				routing: {
-					send: {
-						type: 'body',
-						property: 'signees',
 						value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
 					},
 				},
