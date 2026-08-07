@@ -113,6 +113,15 @@ Nearly every operation is scoped to an **Organization**. The Organization field 
 
 The node covers every endpoint in these resource areas of the Precisely public API.
 
+### Precisely Trigger
+
+A separate **Precisely Trigger** node starts workflows from Precisely's resthook events. It registers a webhook subscription automatically when the workflow is activated and removes it on deactivation.
+
+- **Trigger On** events: Document Signed, Document Status Changed, User Has a Document to Sign, User Has a Document to Review, User Has a Project to Approve.
+- **Verify Signature** (optional): validates each delivery's `Precisely-Signature` header (HMAC-SHA256 over `t.payload\n`, keyed with the subscription's endpoint secret) and rejects mismatches with `401`.
+
+Webhook registration requires a **public HTTPS callback URL** — see [Local development & testing](#local-development--testing).
+
 ## Usage notes
 
 - **Selecting an organization** — use the **From List** mode to pick by name, or **By ID** to type/expression an ID.
@@ -122,6 +131,26 @@ The node covers every endpoint in these resource areas of the Precisely public A
 - **Delete / Cancel** operations return `{ "deleted": true }` on success.
 - **Search** — add **Filters** (document `status` or `title`) and/or **Metadata Filters** (metadata key + operator + value). At least one filter is required.
 - **Signees, References** — provided as structured, repeatable fields (add one row per signee / reference). The project *Create Document* **Content** is a free-form object, so it is entered as JSON.
+
+## Local development & testing
+
+```bash
+npm install
+npm run build          # compile + copy icons/codex into dist
+npm run dev            # launch local n8n with the node loaded (localhost)
+```
+
+To test the **Precisely Trigger**, Precisely needs a public HTTPS URL to call back. Use the tunnel helper, which builds the node, opens a [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/), and starts n8n with `WEBHOOK_URL` pointed at it:
+
+```bash
+brew install cloudflared          # one-time
+npm run dev:tunnel                # public tunnel + n8n at http://localhost:5678
+# variants:
+npm run dev:tunnel -- --no-tunnel                 # localhost only
+WEBHOOK_URL=https://my.tunnel npm run dev:tunnel  # bring your own tunnel
+```
+
+Activate a workflow containing the Precisely Trigger; the node registers a subscription against Precisely with the tunnel callback URL and removes it on deactivation.
 
 ## Compatibility
 

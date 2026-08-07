@@ -1,0 +1,22 @@
+{
+	"node": "n8n-nodes-precisely",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Productivity", "Sales"],
+	"subcategories": {
+		"Productivity": ["Document & Contracts"]
+	},
+	"alias": ["Precisely", "Contract", "Signature", "Webhook", "Resthook", "Trigger"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://help.precisely.se/en/articles/5733009-api-tokens-in-precisely"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://help.precisely.se/en/articles/4135833-precisely-s-contract-automation-api"
+			}
+		]
+	}
+}

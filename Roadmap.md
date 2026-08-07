@@ -111,7 +111,15 @@ Legend: ✅ done · 🚧 in progress · ⬜ planned
 - ✅ Structured `fixedCollection` inputs for template `references` (`{name, value}`) and project Create Document `signees` (full signee fields). Only the schema-less project `content` object stays a JSON field.
 - ✅ `organizationId` upgraded to a `resourceLocator` (From List backed by `searchOrganizations`, or By ID).
 
+## Trigger — Precisely resthooks
+
+| Status | Item |
+|--------|------|
+| ✅ | **Precisely Trigger** node — auto-registers a subscription on activation (`POST /subscriptions`), removes it on deactivation (`DELETE`), confirms via list (no single-GET endpoint). |
+| ✅ | Events: Document Signed / Status Changed, User document-to-sign / document-to-review, User project-to-approve. |
+| ✅ | Optional `Precisely-Signature` HMAC-SHA256 verification (keyed with the endpoint secret). |
+| ✅ | `scripts/dev-tunnel.sh` + `npm run dev:tunnel` — Cloudflare quick tunnel for local webhook testing. |
+
 ## Later / backlog
 
-- **Trigger node** (programmatic) for Precisely resthooks — subscribe to events and receive webhook callbacks, verifying the `Precisely-Signature` header. See CLAUDE.md → "Resthooks / webhooks".
-- Additional top-level resources not yet added: Folders, Teams, Users, Metadata Keys, Subscriptions (resthooks).
+- Additional top-level resources not yet added: Folders, Teams, Users, Metadata Keys, and subscription management operations (list/update/callbacks) on the action node.
