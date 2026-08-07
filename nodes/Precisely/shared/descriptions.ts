@@ -115,6 +115,147 @@ export function clientListPagination(show: DisplayShow): INodeProperties[] {
 	];
 }
 
+const authMethodToViewOptions = [
+	{ name: 'DK MitID', value: 'dk_mitid' },
+	{ name: 'DK NemID', value: 'dk_nemid' },
+	{ name: 'FI Tupas', value: 'fi_tupas' },
+	{ name: 'NO BankID', value: 'no_bankid' },
+	{ name: 'None', value: 'none' },
+	{ name: 'SE BankID', value: 'se_bankid' },
+	{ name: 'Smart ID', value: 'smartid' },
+	{ name: 'SMS PIN', value: 'sms_pin' },
+];
+
+const authMethodToSignOptions = [
+	{ name: 'DK MitID', value: 'dk_mitid' },
+	{ name: 'DK NemID', value: 'dk_nemid' },
+	{ name: 'FI Tupas', value: 'fi_tupas' },
+	{ name: 'In Person', value: 'in_person' },
+	{ name: 'NO BankID', value: 'no_bankid' },
+	{ name: 'SE BankID', value: 'se_bankid' },
+	{ name: 'Smart ID', value: 'smartid' },
+	{ name: 'SMS PIN', value: 'sms_pin' },
+	{ name: 'Standard', value: 'standard' },
+];
+
+/**
+ * Builds the signee body fields (SigneeRequest). Reused by the document Signee
+ * resource and the project Add Signee operation — same body, different
+ * displayOptions. Email is the only required field; the rest go in a collection.
+ */
+export function signeeBodyFields(show: DisplayShow): INodeProperties[] {
+	return [
+		{
+			displayName: 'Email',
+			name: 'email',
+			type: 'string',
+			default: '',
+			required: true,
+			placeholder: 'e.g. maria@example.com',
+			description: 'Email address of the signee',
+			displayOptions: { show },
+			routing: { send: { type: 'body', property: 'email' } },
+		},
+		{
+			displayName: 'Additional Fields',
+			name: 'additionalFields',
+			type: 'collection',
+			placeholder: 'Add Field',
+			default: {},
+			displayOptions: { show },
+			options: [
+				{
+					displayName: 'Authentication Method to Sign',
+					name: 'authMethodToSign',
+					type: 'options',
+					default: 'standard',
+					description: 'Authentication method required for the signee to sign',
+					options: authMethodToSignOptions,
+					routing: { send: { type: 'body', property: 'authMethodToSign' } },
+				},
+				{
+					displayName: 'Authentication Method to View',
+					name: 'authMethodToView',
+					type: 'options',
+					default: 'none',
+					description: 'Authentication method required for the signee to view',
+					options: authMethodToViewOptions,
+					routing: { send: { type: 'body', property: 'authMethodToView' } },
+				},
+				{
+					displayName: 'Final Email Notification Disabled',
+					name: 'finalEmailNotificationDisabled',
+					type: 'boolean',
+					default: false,
+					description: 'Whether to disable the final email notification. Defaults to false.',
+					routing: { send: { type: 'body', property: 'finalEmailNotificationDisabled' } },
+				},
+				{
+					displayName: 'Initial Email Notification Disabled',
+					name: 'initialEmailNotificationDisabled',
+					type: 'boolean',
+					default: false,
+					description: 'Whether to disable the initial email notification. Defaults to false.',
+					routing: { send: { type: 'body', property: 'initialEmailNotificationDisabled' } },
+				},
+				{
+					displayName: 'Mobile',
+					name: 'mobile',
+					type: 'string',
+					default: '',
+					description: 'Mobile phone number of the signee',
+					routing: { send: { type: 'body', property: 'mobile' } },
+				},
+				{
+					displayName: 'Name',
+					name: 'name',
+					type: 'string',
+					default: '',
+					description: 'Name of the signee',
+					routing: { send: { type: 'body', property: 'name' } },
+				},
+				{
+					displayName: 'National ID',
+					name: 'nationalId',
+					type: 'string',
+					default: '',
+					description: 'National ID number of the signee',
+					routing: { send: { type: 'body', property: 'nationalId' } },
+				},
+				{
+					displayName: 'Organization',
+					name: 'organization',
+					type: 'string',
+					default: '',
+					description: 'Organization the signee belongs to',
+					routing: { send: { type: 'body', property: 'organization' } },
+				},
+				{
+					displayName: 'Role',
+					name: 'role',
+					type: 'string',
+					default: '',
+					description: 'Free-text role of the signee',
+					routing: { send: { type: 'body', property: 'role' } },
+				},
+				{
+					displayName: 'Signing Role',
+					name: 'signingRole',
+					type: 'options',
+					default: 'signer',
+					description: 'The signing role of the signee',
+					options: [
+						{ name: 'Approver', value: 'approver' },
+						{ name: 'Signer', value: 'signer' },
+						{ name: 'Viewer', value: 'viewer' },
+					],
+					routing: { send: { type: 'body', property: 'signingRole' } },
+				},
+			],
+		},
+	];
+}
+
 /**
  * Return All toggle for the document list endpoints (Get Many, Search). Those
  * paginate via `page` + `limit` query params and report progress in the

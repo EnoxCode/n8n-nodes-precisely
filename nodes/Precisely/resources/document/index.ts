@@ -23,7 +23,9 @@ const singleDocumentOperations = [
 	'delete',
 	'downloadPdf',
 	'getShareLink',
+	'getSignatureRequest',
 	'getVersions',
+	'updateVersion',
 	'sendSignatureRequest',
 	'cancelSignatureRequest',
 	'sendSignatureReminder',
@@ -139,6 +141,18 @@ export const documentDescription: INodeProperties[] = [
 				},
 			},
 			{
+				name: 'Get Signature Request',
+				value: 'getSignatureRequest',
+				action: 'Get a signature request',
+				description: 'Retrieve the current signature request status of a document',
+				routing: {
+					request: {
+						method: 'GET',
+						url: '=/organizations/{{$parameter.organizationId}}/documents/{{$parameter.documentId}}/signature-request',
+					},
+				},
+			},
+			{
 				name: 'Search',
 				value: 'search',
 				action: 'Search documents',
@@ -187,6 +201,18 @@ export const documentDescription: INodeProperties[] = [
 					},
 				},
 			},
+			{
+				name: 'Update Version',
+				value: 'updateVersion',
+				action: 'Update a document version',
+				description: 'Set the published state of a document version',
+				routing: {
+					request: {
+						method: 'PATCH',
+						url: '=/organizations/{{$parameter.organizationId}}/documents/{{$parameter.documentId}}/versions/{{$parameter.versionId}}',
+					},
+				},
+			},
 		],
 		default: 'getAll',
 	},
@@ -213,6 +239,30 @@ export const documentDescription: INodeProperties[] = [
 			show: { ...showOnlyForDocuments, operation: ['sendSignatureRequest'] },
 		},
 		routing: { send: { type: 'body', property: 'message' } },
+	},
+	// Update Version fields
+	{
+		displayName: 'Version ID',
+		name: 'versionId',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. 3',
+		description: 'ID of the version to update',
+		displayOptions: {
+			show: { ...showOnlyForDocuments, operation: ['updateVersion'] },
+		},
+	},
+	{
+		displayName: 'Published',
+		name: 'published',
+		type: 'boolean',
+		default: false,
+		description: 'Whether the version should be published',
+		displayOptions: {
+			show: { ...showOnlyForDocuments, operation: ['updateVersion'] },
+		},
+		routing: { send: { type: 'body', property: 'published' } },
 	},
 	...documentCreateDescription,
 	...documentUpdateDescription,

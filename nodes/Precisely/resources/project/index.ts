@@ -1,5 +1,9 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { organizationIdField, projectIdField } from '../../shared/descriptions';
+import {
+	organizationIdField,
+	projectIdField,
+	signeeBodyFields,
+} from '../../shared/descriptions';
 import { buildProjectImportBody, returnDeleted } from '../../shared/transforms';
 import { projectGetManyDescription } from './getAll';
 
@@ -15,9 +19,16 @@ const singleProjectOperations = [
 	'getDocuments',
 	'approveInitial',
 	'approveFinal',
+	'approveById',
+	'deleteApproval',
 	'importDocument',
+	'createDocument',
 	'sendSignatureRequest',
+	'cancelSignatureRequest',
+	'addSignee',
+	'removeSignee',
 ];
+const approvalIdOperations = ['approveById', 'deleteApproval'];
 
 export const projectDescription: INodeProperties[] = [
 	{
@@ -27,6 +38,30 @@ export const projectDescription: INodeProperties[] = [
 		noDataExpression: true,
 		displayOptions: { show: showOnlyForProjects },
 		options: [
+			{
+				name: 'Add Signee',
+				value: 'addSignee',
+				action: 'Add a signee to a project',
+				description: 'Add a signee to a project',
+				routing: {
+					request: {
+						method: 'POST',
+						url: '=/organizations/{{$parameter.organizationId}}/projects/{{$parameter.projectId}}/signees',
+					},
+				},
+			},
+			{
+				name: 'Approve (By ID)',
+				value: 'approveById',
+				action: 'Approve a specific project approval',
+				description: 'Approve a specific pending approval on a project',
+				routing: {
+					request: {
+						method: 'POST',
+						url: '=/organizations/{{$parameter.organizationId}}/projects/{{$parameter.projectId}}/approvals/{{$parameter.approvalId}}',
+					},
+				},
+			},
 			{
 				name: 'Approve (Final)',
 				value: 'approveFinal',
@@ -52,6 +87,31 @@ export const projectDescription: INodeProperties[] = [
 				},
 			},
 			{
+				name: 'Cancel Signature Request',
+				value: 'cancelSignatureRequest',
+				action: 'Cancel a project signature request',
+				description: 'Withdraw a pending project signature request',
+				routing: {
+					request: {
+						method: 'DELETE',
+						url: '=/organizations/{{$parameter.organizationId}}/projects/{{$parameter.projectId}}/signature-request',
+					},
+					output: { postReceive: [returnDeleted] },
+				},
+			},
+			{
+				name: 'Create Document',
+				value: 'createDocument',
+				action: 'Create a document in a project',
+				description: 'Create a document from content in a project',
+				routing: {
+					request: {
+						method: 'POST',
+						url: '=/organizations/{{$parameter.organizationId}}/projects/{{$parameter.projectId}}/documents',
+					},
+				},
+			},
+			{
 				name: 'Delete',
 				value: 'delete',
 				action: 'Delete a project',
@@ -60,6 +120,19 @@ export const projectDescription: INodeProperties[] = [
 					request: {
 						method: 'DELETE',
 						url: '=/organizations/{{$parameter.organizationId}}/projects/{{$parameter.projectId}}',
+					},
+					output: { postReceive: [returnDeleted] },
+				},
+			},
+			{
+				name: 'Delete Approval',
+				value: 'deleteApproval',
+				action: 'Delete a project approval',
+				description: 'Remove a specific approval from a project',
+				routing: {
+					request: {
+						method: 'DELETE',
+						url: '=/organizations/{{$parameter.organizationId}}/projects/{{$parameter.projectId}}/approvals/{{$parameter.approvalId}}',
 					},
 					output: { postReceive: [returnDeleted] },
 				},
@@ -126,6 +199,19 @@ export const projectDescription: INodeProperties[] = [
 				},
 			},
 			{
+				name: 'Remove Signee',
+				value: 'removeSignee',
+				action: 'Remove a signee from a project',
+				description: 'Remove a signee from a project by email',
+				routing: {
+					request: {
+						method: 'DELETE',
+						url: '=/organizations/{{$parameter.organizationId}}/projects/{{$parameter.projectId}}/signees/{{encodeURIComponent($parameter.signeeEmail)}}',
+					},
+					output: { postReceive: [returnDeleted] },
+				},
+			},
+			{
 				name: 'Send Signature Request',
 				value: 'sendSignatureRequest',
 				action: 'Send a project signature request',
@@ -162,7 +248,33 @@ export const projectDescription: INodeProperties[] = [
 			show: { ...showOnlyForProjects, operation: singleProjectOperations },
 		},
 	},
-	// Approval user
+	// Approval ID
+	{
+		displayName: 'Approval ID',
+		name: 'approvalId',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. 33',
+		description: 'ID of the approval to operate on',
+		displayOptions: {
+			show: { ...showOnlyForProjects, operation: approvalIdOperations },
+		},
+	},
+	// Remove Signee email
+	{
+		displayName: 'Signee Email',
+		name: 'signeeEmail',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. maria@example.com',
+		description: 'Email of the signee to remove',
+		displayOptions: {
+			show: { ...showOnlyForProjects, operation: ['removeSignee'] },
+		},
+	},
+	// Approval user (initial/final)
 	{
 		displayName: 'User ID',
 		name: 'userId',
@@ -176,6 +288,8 @@ export const projectDescription: INodeProperties[] = [
 		},
 		routing: { send: { type: 'body', property: 'userId' } },
 	},
+	// Add Signee body (SigneeRequest)
+	...signeeBodyFields({ ...showOnlyForProjects, operation: ['addSignee'] }),
 	// Signature request message
 	{
 		displayName: 'Message',
@@ -188,7 +302,7 @@ export const projectDescription: INodeProperties[] = [
 		},
 		routing: { send: { type: 'body', property: 'message' } },
 	},
-	// Import document
+	// Import document input
 	{
 		displayName: 'Input Data Field Name',
 		name: 'inputField',
@@ -200,6 +314,58 @@ export const projectDescription: INodeProperties[] = [
 		displayOptions: {
 			show: { ...showOnlyForProjects, operation: ['importDocument'] },
 		},
+	},
+	// Create Document (from content)
+	{
+		displayName: 'Title',
+		name: 'title',
+		type: 'string',
+		default: '',
+		description: 'Title of the document to create',
+		displayOptions: {
+			show: { ...showOnlyForProjects, operation: ['createDocument'] },
+		},
+		routing: { send: { type: 'body', property: 'title' } },
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: { ...showOnlyForProjects, operation: ['createDocument'] },
+		},
+		options: [
+			{
+				displayName: 'Content (JSON)',
+				name: 'content',
+				type: 'json',
+				default: '{}',
+				description: 'The document content object',
+				routing: {
+					send: {
+						type: 'body',
+						property: 'content',
+						value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
+					},
+				},
+			},
+			{
+				displayName: 'Signees (JSON)',
+				name: 'signees',
+				type: 'json',
+				default: '[]',
+				description: 'A JSON array of signee objects to add to the document',
+				routing: {
+					send: {
+						type: 'body',
+						property: 'signees',
+						value: '={{ typeof $value === "string" ? JSON.parse($value) : $value }}',
+					},
+				},
+			},
+		],
 	},
 	// Update fields
 	{

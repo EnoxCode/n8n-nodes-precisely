@@ -52,9 +52,11 @@ Legend: ✅ done · 🚧 in progress · ⬜ planned
 | ✅ | Create (import a file) | `POST /organizations/{organizationId}/documents/import` |
 | ✅ | Update | `PATCH /organizations/{organizationId}/documents/{documentId}` |
 | ✅ | Delete | `DELETE /organizations/{organizationId}/documents/{documentId}` |
+| ✅ | Get Signature Request | `GET /organizations/{organizationId}/documents/{documentId}/signature-request` |
 | ✅ | Send Signature Request | `POST /organizations/{organizationId}/documents/{documentId}/signature-request` |
 | ✅ | Cancel Signature Request | `DELETE /organizations/{organizationId}/documents/{documentId}/signature-request` |
 | ✅ | Send Signature Reminder | `POST /organizations/{organizationId}/documents/{documentId}/signature-request/reminder` |
+| ✅ | Update Version | `PATCH /organizations/{organizationId}/documents/{documentId}/versions/{versionId}` |
 
 **Project**
 
@@ -64,8 +66,14 @@ Legend: ✅ done · 🚧 in progress · ⬜ planned
 | ✅ | Delete | `DELETE /organizations/{organizationId}/projects/{projectId}` |
 | ✅ | Approve (Initial) | `POST /organizations/{organizationId}/projects/{projectId}/approvals/initial` |
 | ✅ | Approve (Final) | `POST /organizations/{organizationId}/projects/{projectId}/approvals/final` |
+| ✅ | Approve (By ID) | `POST /organizations/{organizationId}/projects/{projectId}/approvals/{approvalId}` |
+| ✅ | Delete Approval | `DELETE /organizations/{organizationId}/projects/{projectId}/approvals/{approvalId}` |
+| ✅ | Create Document | `POST /organizations/{organizationId}/projects/{projectId}/documents` |
 | ✅ | Import Document | `POST /organizations/{organizationId}/projects/{projectId}/documents/import` |
 | ✅ | Send Signature Request | `POST /organizations/{organizationId}/projects/{projectId}/signature-request` |
+| ✅ | Cancel Signature Request | `DELETE /organizations/{organizationId}/projects/{projectId}/signature-request` |
+| ✅ | Add Signee | `POST /organizations/{organizationId}/projects/{projectId}/signees` |
+| ✅ | Remove Signee | `DELETE /organizations/{organizationId}/projects/{projectId}/signees/{email}` |
 
 **Template**
 
@@ -84,11 +92,23 @@ Legend: ✅ done · 🚧 in progress · ⬜ planned
 | ✅ | Reviewer — Create | `POST /organizations/{organizationId}/documents/{documentId}/reviewers` |
 | ✅ | Reviewer — Delete | `DELETE /organizations/{organizationId}/documents/{documentId}/reviewers/{reviewerId}` |
 
-> Delete/Cancel operations return `{ deleted: true }`. File imports read a file from an input binary field and base64-encode it. Template drafting `references` is passed as a JSON array (per-reference answer objects) — a structured UI for it is a future enhancement.
+**Document sub-resources (own node resources)**
+
+| Status | Resource | Operations |
+|--------|----------|-----------|
+| ✅ | Signee | Get Many, Get, Create, Reorder, Delete (`.../documents/{documentId}/signees`) |
+| ✅ | Metadata Point | Get Many, Create, Update, Delete (`.../documents/{documentId}/metadata-points`) |
+| ✅ | Link | Get Many, Create, Delete (`.../documents/{documentId}/links`) |
+
+> Delete/Cancel operations return `{ deleted: true }`. File imports read a file from an input binary field and base64-encode it. Free-form bodies (template drafting `references`, project Create Document `content`/`signees`) are passed as JSON — structured UIs for them are future enhancements.
+
+## Coverage
+
+**Every endpoint under the six top-level resource areas (Organization, Document, Project, Template, Reminder, Reviewer — plus the Signee / Metadata Point / Link document sub-resources) is now implemented: 59/59 spec endpoints.** Verified by cross-checking implemented routes against the OpenAPI spec.
 
 ## Later / backlog
 
 - **Trigger node** (programmatic) for Precisely resthooks — subscribe to events and receive webhook callbacks, verifying the `Precisely-Signature` header. See CLAUDE.md → "Resthooks / webhooks".
-- Not yet wired: document sub-resources **Signees**, **Metadata Points**, **Links**; project **Signees**; template **references** structured input.
-- Additional top-level resources: Folders, Teams, Users, Metadata Keys.
+- Additional top-level resources not yet added: Folders, Teams, Users, Metadata Keys, Subscriptions (resthooks).
+- Structured UIs for the JSON body fields (template `references`, project document `content`/`signees`).
 - Upgrade `organizationId` to a `resourceLocator` with a `listSearch` dropdown backed by `GET /organizations`.

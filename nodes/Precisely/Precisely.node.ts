@@ -5,6 +5,9 @@ import { projectDescription } from './resources/project';
 import { reminderDescription } from './resources/reminder';
 import { reviewerDescription } from './resources/reviewer';
 import { templateDescription } from './resources/template';
+import { signeeDescription } from './resources/signee';
+import { metadataPointDescription } from './resources/metadataPoint';
+import { linkDescription } from './resources/link';
 import { getOrganizations } from './methods/getOrganizations';
 
 export class Precisely implements INodeType {
@@ -51,6 +54,14 @@ export class Precisely implements INodeType {
 						value: 'document',
 					},
 					{
+						name: 'Link',
+						value: 'link',
+					},
+					{
+						name: 'Metadata Point',
+						value: 'metadataPoint',
+					},
+					{
 						name: 'Organization',
 						value: 'organization',
 					},
@@ -67,6 +78,10 @@ export class Precisely implements INodeType {
 						value: 'reviewer',
 					},
 					{
+						name: 'Signee',
+						value: 'signee',
+					},
+					{
 						name: 'Template',
 						value: 'template',
 					},
@@ -79,6 +94,9 @@ export class Precisely implements INodeType {
 			...reminderDescription,
 			...reviewerDescription,
 			...templateDescription,
+			...signeeDescription,
+			...metadataPointDescription,
+			...linkDescription,
 		],
 	};
 
